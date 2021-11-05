@@ -29,24 +29,28 @@ class UserController extends Controller
     }
 
 
-    public function update_profile(Request $request) {
+    public function update_profile(Request $request): \Illuminate\Http\JsonResponse
+    {
         try {
             $user = auth()->user();
-            if($request->has('name')){
-                $user->name = $request->name;
-            }
-            if($request->has('username')){
-                $user->username = $request->username;
-            }
-            if ($files = $request->file('avatar')) {
-                $file = $request->file->store('public/avatars');
-                $user->avatar = $file;
-            }
+            if($user) {
+                if ($request->has('name')) {
+                    $user->name = $request->name;
+                }
+                if ($request->has('username')) {
+                    $user->username = $request->username;
+                }
 
-            if($request->has('avatar')){
-                $imageName = time().'.'.$request->avatar->extension();
+                if ($request->has('avatar')) {
+                    $imageName = time() . '.' . $request->avatar->extension();
+                    $request->avatar->move(public_path('images'), $imageName);
+                    $user->avatar = $imageName;
+                }
+                $user->save();
 
-                $request->image->move(public_path('images'), $imageName);
+                return Response::json([
+                    'message' => 'Profile Updated successfully!'
+                ], 200);
             }
         }
         catch (\Exception $e) {

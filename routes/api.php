@@ -23,6 +23,6 @@ Route::post('/store-user',[App\Http\Controllers\Admin\UserController::class,'sto
 Route::get('/verify-email/{email}/{pin}', [App\Http\Controllers\Admin\UserController::class, 'verify_email']);
 
 Route::post('/user/login', [\App\Http\Controllers\UserController::class, 'login']);
-Route::middleware('auth:api')->group(function () {
-    Route::post('/update-profile',[\App\Http\Controllers\UserController::class,'update_profile']);
+Route::group(['middleware' => ['cors', 'json.response', 'auth:api']], function () {
+    Route::post('/user/update-profile',[\App\Http\Controllers\UserController::class,'update_profile']);
 });

@@ -19,6 +19,17 @@ class UserController extends Controller
     {
         try {
 
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email|unique:users',
+                'name' => 'required|string|max:50'
+            ]);
+
+            if ($validator->fails()) {
+                return Response::json([
+                    'error' => $validator->messages()
+                ], 500);
+            }
+
             // generating unique string
             $now = Carbon::now();
             $unique_code = $now->format('YmdHisu');
@@ -30,8 +41,8 @@ class UserController extends Controller
             $link = env('APP_URL').'user/register/'.$unique_code;
 
             $data = array('name'=>"Demo User", 'link' => $link);
-            Mail::send('email/userRegisterEmail', $data, function($message) {
-                $message->to('madihulhasnat@gmail.com', 'Users API')->subject
+            Mail::send('email/userRegisterEmail', $data, function($message) use ($request) {
+                $message->to($request->email, $request->name)->subject
                 ('Invite to Register');
                 $message->from(env('MAIL_FROM_ADDRESS'),'API Admin');
             });
@@ -74,7 +85,8 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'email' => 'required|email|unique:users',
                 'username' => 'required|string|min:3',
-                'password' => 'required|confirmed|min:6'
+                'password' => 'required|confirmed|min:6',
+                'token' => 'required|exists:user_tokens,unique_code'
             ]);
 
             if ($validator->fails()) {
@@ -95,6 +107,8 @@ class UserController extends Controller
             $user->two_factor_secret = $random_pin;
             $user->save();
 
+            $token = auth()->user()->createToken($request->email)->accessToken;
+
             $link =  env('APP_URL').'api/verify-email/'.$user->email.'/'.$random_pin;
 
             // sending user 6-digit pin for verification
@@ -106,6 +120,7 @@ class UserController extends Controller
             });
 
             return Response::json([
+                'token' => $token,
                 'message' => 'Pin Email sent successfully!'
             ], 200);
 
